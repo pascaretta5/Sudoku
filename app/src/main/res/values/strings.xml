@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sudoku Game</string>
+    
+    <!-- Homepage -->
+    <string name="play">PLAY</string>
+    <string name="daily_challenge">DAILY CHALLENGE</string>
+    <string name="achievements">ACHIEVEMENTS</string>
+    <string name="leaderboards">LEADERBOARDS</string>
+    <string name="settings">SETTINGS</string>
+    
+    <!-- Difficulty Selection -->
+    <string name="select_difficulty">SELECT DIFFICULTY</string>
+    <string name="difficulty_easy">EASY</string>
+    <string name="difficulty_normal">NORMAL</string>
+    <string name="difficulty_hard">HARD</string>
+    <string name="difficulty_insane">INSANE</string>
+    <string name="difficulty_easy_desc">Perfect for beginners</string>
+    <string name="difficulty_normal_desc">For casual players</string>
+    <string name="difficulty_hard_desc">For experienced players</string>
+    <string name="difficulty_insane_desc">The ultimate challenge</string>
+    
+    <!-- Game Screen -->
+    <string name="hint">HINT</string>
+    <string name="undo">UNDO</string>
+    <string name="redo">REDO</string>
+    <string name="notes">NOTES</string>
+    <string name="erase">ERASE</string>
+    <string name="pause">PAUSE</string>
+    <string name="resume">RESUME</string>
+    <string name="back">BACK</string>
+    
+    <!-- Settings -->
+    <string name="sound_effects">Sound Effects</string>
+    <string name="background_music">Background Music</string>
+    <string name="vibration">Vibration</string>
+    <string name="highlight_same_numbers">Highlight Same Numbers</string>
+    <string name="auto_check">Auto-check for Mistakes</string>
+    <string name="volume">Volume</string>
+    <string name="theme">Theme</string>
+    <string name="reset_progress">RESET PROGRESS</string>
+    <string name="on">ON</string>
+    <string name="off">OFF</string>
+    
+    <!-- Game Complete -->
+    <string name="completed">COMPLETED!</string>
+    <string name="time">Time:</string>
+    <string name="hints_used">Hints Used:</string>
+    <string name="score">Score:</string>
+    <string name="new_record">NEW RECORD!</string>
+    <string name="play_again">PLAY AGAIN</string>
+    <string name="share_result">SHARE RESULT</string>
+    <string name="main_menu">MAIN MENU</string>
+    
+    <!-- Dialogs -->
+    <string name="confirm">CONFIRM</string>
+    <string name="cancel">CANCEL</string>
+    <string name="exit_game_title">Exit Game?</string>
+    <string name="exit_game_message">Your progress will be saved automatically.</string>
+    <string name="reset_progress_title">Reset Progress?</string>
+    <string name="reset_progress_message">This will delete all your achievements and saved games. This action cannot be undone.</string>
+    <string name="no_hints_left">No hints left</string>
+    <string name="congratulations">Congratulations!</string>
+</resources>
