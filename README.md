@@ -1,5 +1,5 @@
 This is a personal project with the intention of making a complete beautiful and stylish Sudoku game. 
-The app is currently on pre-release and fully playable, although it's missing some functionalities (please see release v0.1 for more details.
+The app is currently on pre-release and fully playable, although it's missing some functionalities (please see release v0.1 for more details).
 
 This is the current homepage:
 
