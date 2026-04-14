@@ -8,8 +8,16 @@
     <string name="achievements">ACHIEVEMENTS</string>
     <string name="leaderboards">LEADERBOARDS</string>
     <string name="settings">SETTINGS</string>
-    <string name="resume_saved_game_title">Resume Saved Game?</string>
-    <string name="resume_saved_game_message">You have an unfinished Sudoku puzzle. Would you like to resume it or start a new one?</string>
+    <string name="home_tagline">Relax your brain, stir up a little chaos, and solve something beautiful.</string>
+    <string name="saved_games">SAVED GAMES</string>
+    <string name="saved_games_subtitle">Keep up to three puzzles on the go and jump back in whenever you like.</string>
+    <string name="empty_saved_games">No saved games yet. Your next puzzle can nap here.</string>
+    <string name="saved_game_title_format">Save %1$d · %2$s</string>
+    <string name="saved_game_summary_format">%1$s • Time %2$s • Hints %3$d • %4$s</string>
+    <string name="saved_game_daily_challenge">Daily Challenge</string>
+    <string name="saved_game_standard">Standard Puzzle</string>
+    <string name="saved_games_full_title">Saved Games Full</string>
+    <string name="saved_games_full_message">You already have three saved games. Pick one slot to replace, or cancel and finish another puzzle first.</string>
     <string name="start_new_game">START NEW</string>
 
     <!-- Difficulty Selection -->
@@ -34,6 +42,12 @@
     <string name="resume">RESUME</string>
     <string name="back">BACK</string>
     <string name="game_paused">Game paused</string>
+    <string name="control_strip_label">Puzzle tools</string>
+    <string name="number_pad_label">Number pad</string>
+    <string name="help_popup_title">Need a wee hand?</string>
+    <string name="help_popup_message">You have been thinking for over a minute. Want a hint to nudge the puzzle along?</string>
+    <string name="try_hint">TRY HINT</string>
+    <string name="keep_solving">KEEP SOLVING</string>
 
     <!-- Settings -->
     <string name="sound_effects">Sound Effects</string>

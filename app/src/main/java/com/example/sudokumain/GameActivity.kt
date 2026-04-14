@@ -1,5 +1,7 @@
 package com.example.sudokumain
 
+import android.animation.ObjectAnimator
+import android.animation.PropertyValuesHolder
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -31,6 +33,8 @@ class GameActivity : AppCompatActivity() {
     private lateinit var sudokuBoardView: SudokuBoardView
     private lateinit var timerHandler: Handler
     private lateinit var timerRunnable: Runnable
+    private lateinit var idleHandler: Handler
+    private lateinit var idleHelpRunnable: Runnable
     private lateinit var tvTimer: TextView
     private lateinit var tvDifficulty: TextView
     private lateinit var btnHint: Button
@@ -39,7 +43,10 @@ class GameActivity : AppCompatActivity() {
     private var isNotesMode = false
     private var selectedRow = -1
     private var selectedCol = -1
+    private var currentSaveSlotIndex = -1
     private var isTimerTickerRunning = false
+    private var isHintSuggested = false
+    private var hintPulseAnimator: ObjectAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,12 +55,7 @@ class GameActivity : AppCompatActivity() {
         soundManager = SoundManager
         soundManager.init(this)
 
-        val savedSession = if (intent.getBooleanExtra(EXTRA_RESUME_SAVED_GAME, false)) {
-            ActiveGameStorage.loadGame(this)
-        } else {
-            null
-        }
-
+        val savedSession = loadSavedSessionIfRequested()
         val difficulty = savedSession?.saveGame?.difficulty
             ?: Difficulty.valueOf(intent.getStringExtra(EXTRA_DIFFICULTY) ?: Difficulty.NORMAL.name)
 
@@ -76,14 +78,33 @@ class GameActivity : AppCompatActivity() {
         selectedCol = savedInstanceState?.getInt(STATE_SELECTED_COL)
             ?: savedSession?.selectedCol
             ?: -1
+        currentSaveSlotIndex = savedInstanceState?.getInt(STATE_SAVE_SLOT_INDEX)
+            ?: savedSession?.slotIndex
+            ?: intent.getIntExtra(EXTRA_SAVE_SLOT_INDEX, -1)
 
         initializeUI(difficulty)
         setupTimer()
+        setupIdleHelpTimer()
         setupNumberPad()
         setupControlButtons()
         restoreSelectionIfNeeded()
         updateNotesButtonAppearance()
+        updateHintButtonAppearance()
         updateBoardView()
+        resetIdleHelpTimer()
+    }
+
+    private fun loadSavedSessionIfRequested(): ActiveGameStorage.SavedSession? {
+        if (!intent.getBooleanExtra(EXTRA_RESUME_SAVED_GAME, false)) {
+            return null
+        }
+
+        val requestedSlot = intent.getIntExtra(EXTRA_SAVE_SLOT_INDEX, -1)
+        return if (requestedSlot >= 0) {
+            ActiveGameStorage.loadGame(this, requestedSlot)
+        } else {
+            ActiveGameStorage.loadMostRecentGame(this)
+        }
     }
 
     private fun initializeUI(difficulty: Difficulty) {
@@ -94,8 +115,7 @@ class GameActivity : AppCompatActivity() {
 
         findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
             soundManager.playButtonClick()
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         tvDifficulty = findViewById(R.id.tvDifficulty)
@@ -127,6 +147,15 @@ class GameActivity : AppCompatActivity() {
         startTimerTicker()
     }
 
+    private fun setupIdleHelpTimer() {
+        idleHandler = Handler(Looper.getMainLooper())
+        idleHelpRunnable = Runnable {
+            if (!gameState.isPaused() && !gameState.isGameOver() && !gameState.board.isSolved()) {
+                showHintSuggestionDialog()
+            }
+        }
+    }
+
     private fun startTimerTicker() {
         if (isTimerTickerRunning) return
         timerHandler.post(timerRunnable)
@@ -137,6 +166,20 @@ class GameActivity : AppCompatActivity() {
         if (!::timerHandler.isInitialized) return
         timerHandler.removeCallbacks(timerRunnable)
         isTimerTickerRunning = false
+    }
+
+    private fun resetIdleHelpTimer() {
+        if (!::idleHandler.isInitialized) return
+        idleHandler.removeCallbacks(idleHelpRunnable)
+        if (!gameState.isPaused() && !gameState.isGameOver()) {
+            idleHandler.postDelayed(idleHelpRunnable, IDLE_HELP_DELAY_MS)
+        }
+    }
+
+    private fun stopIdleHelpTimer() {
+        if (::idleHandler.isInitialized) {
+            idleHandler.removeCallbacks(idleHelpRunnable)
+        }
     }
 
     private fun setupNumberPad() {
@@ -166,7 +209,9 @@ class GameActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnUndo).setOnClickListener {
             soundManager.playButtonClick()
             if (gameState.board.undo()) {
+                clearHintSuggestion()
                 updateBoardView()
+                resetIdleHelpTimer()
             }
         }
 
@@ -174,6 +219,7 @@ class GameActivity : AppCompatActivity() {
             soundManager.playButtonClick()
             isNotesMode = !isNotesMode
             updateNotesButtonAppearance()
+            resetIdleHelpTimer()
         }
 
         findViewById<Button>(R.id.btnErase).setOnClickListener {
@@ -183,7 +229,9 @@ class GameActivity : AppCompatActivity() {
                 if (!cell.isGiven) {
                     gameState.board.setValue(selectedRow, selectedCol, 0)
                     cell.clearNotes()
+                    clearHintSuggestion()
                     updateBoardView()
+                    resetIdleHelpTimer()
                 } else {
                     soundManager.playError()
                     triggerHapticFeedback(HapticFeedbackConstants.REJECT)
@@ -208,7 +256,9 @@ class GameActivity : AppCompatActivity() {
 
         if (gameState.board.setValue(row, col, number)) {
             soundManager.playNumberPlaced()
+            clearHintSuggestion()
             updateBoardView()
+            resetIdleHelpTimer()
 
             if (gameState.board.isSolved()) {
                 gameCompleted()
@@ -231,7 +281,9 @@ class GameActivity : AppCompatActivity() {
             cell.addNote(number)
         }
 
+        clearHintSuggestion()
         updateBoardView()
+        resetIdleHelpTimer()
     }
 
     private fun useHint() {
@@ -252,13 +304,40 @@ class GameActivity : AppCompatActivity() {
             gameState.board.setValue(row, col, value)
             soundManager.playHint()
 
+            clearHintSuggestion()
             updateBoardView()
             updateHintButtonText()
+            resetIdleHelpTimer()
 
             if (gameState.board.isSolved()) {
                 gameCompleted()
             }
         }
+    }
+
+    private fun showHintSuggestionDialog() {
+        if (isHintSuggested) return
+        isHintSuggested = true
+        updateHintButtonAppearance()
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.help_popup_title)
+            .setMessage(R.string.help_popup_message)
+            .setPositiveButton(R.string.try_hint) { dialog, _ ->
+                dialog.dismiss()
+                useHint()
+            }
+            .setNegativeButton(R.string.keep_solving) { dialog, _ ->
+                dialog.dismiss()
+                resetIdleHelpTimer()
+            }
+            .show()
+    }
+
+    private fun clearHintSuggestion() {
+        if (!isHintSuggested) return
+        isHintSuggested = false
+        updateHintButtonAppearance()
     }
 
     private fun updateBoardView() {
@@ -334,14 +413,42 @@ class GameActivity : AppCompatActivity() {
         btnHint.text = getString(R.string.hint_with_count, hintsUsed, maxHints)
     }
 
-    private fun updateNotesButtonAppearance() {
-        if (isNotesMode) {
-            btnNotes.setBackgroundColor(getColor(R.color.primary))
-            btnNotes.setTextColor(getColor(R.color.white))
+    private fun updateHintButtonAppearance() {
+        if (isHintSuggested) {
+            btnHint.setBackgroundResource(R.drawable.bg_button_hint_highlight)
+            btnHint.setTextColor(getColor(R.color.primary_dark))
+            startHintPulse()
         } else {
-            btnNotes.setBackgroundColor(getColor(R.color.white))
-            btnNotes.setTextColor(getColor(R.color.primary))
+            btnHint.setBackgroundResource(R.drawable.bg_button_control)
+            btnHint.setTextColor(getColor(R.color.white))
+            stopHintPulse()
         }
+    }
+
+    private fun startHintPulse() {
+        if (hintPulseAnimator?.isRunning == true) return
+        hintPulseAnimator = ObjectAnimator.ofPropertyValuesHolder(
+            btnHint,
+            PropertyValuesHolder.ofFloat(Button.SCALE_X, 1f, 1.06f, 1f),
+            PropertyValuesHolder.ofFloat(Button.SCALE_Y, 1f, 1.06f, 1f)
+        ).apply {
+            duration = 900L
+            repeatCount = ObjectAnimator.INFINITE
+            start()
+        }
+    }
+
+    private fun stopHintPulse() {
+        hintPulseAnimator?.cancel()
+        btnHint.scaleX = 1f
+        btnHint.scaleY = 1f
+        hintPulseAnimator = null
+    }
+
+    private fun updateNotesButtonAppearance() {
+        btnNotes.isSelected = isNotesMode
+        val textColor = if (isNotesMode) getColor(R.color.white) else getColor(R.color.primary_dark)
+        btnNotes.setTextColor(textColor)
     }
 
     private fun restoreSelectionIfNeeded() {
@@ -359,6 +466,7 @@ class GameActivity : AppCompatActivity() {
     private fun pauseGame() {
         gameState.pauseTimer()
         stopTimerTicker()
+        stopIdleHelpTimer()
 
         AlertDialog.Builder(this)
             .setTitle(R.string.pause)
@@ -378,27 +486,35 @@ class GameActivity : AppCompatActivity() {
     private fun resumeGame() {
         gameState.startTimer()
         startTimerTicker()
+        resetIdleHelpTimer()
     }
 
     private fun persistCurrentGame() {
         if (gameState.isGameOver()) {
-            ActiveGameStorage.clear(this)
+            if (currentSaveSlotIndex >= 0) {
+                ActiveGameStorage.clear(this, currentSaveSlotIndex)
+            }
             return
         }
 
-        ActiveGameStorage.saveGame(
+        currentSaveSlotIndex = ActiveGameStorage.saveGame(
             context = this,
             gameState = gameState,
             isNotesMode = isNotesMode,
             selectedRow = selectedRow,
-            selectedCol = selectedCol
+            selectedCol = selectedCol,
+            slotIndex = currentSaveSlotIndex.takeIf { it >= 0 }
         )
     }
 
     private fun gameCompleted() {
         gameState.endGame()
         stopTimerTicker()
-        ActiveGameStorage.clear(this)
+        stopIdleHelpTimer()
+        clearHintSuggestion()
+        if (currentSaveSlotIndex >= 0) {
+            ActiveGameStorage.clear(this, currentSaveSlotIndex)
+        }
 
         soundManager.playGameComplete()
         triggerHapticFeedback(HapticFeedbackConstants.CONFIRM)
@@ -441,6 +557,7 @@ class GameActivity : AppCompatActivity() {
         updateBoardView()
         if (!gameState.isPaused()) {
             startTimerTicker()
+            resetIdleHelpTimer()
         }
         soundManager.resumeBackgroundMusic()
     }
@@ -449,6 +566,7 @@ class GameActivity : AppCompatActivity() {
         super.onPause()
         gameState.pauseTimer()
         stopTimerTicker()
+        stopIdleHelpTimer()
         soundManager.pauseBackgroundMusic()
     }
 
@@ -461,17 +579,21 @@ class GameActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         outState.putInt(STATE_SELECTED_ROW, selectedRow)
         outState.putInt(STATE_SELECTED_COL, selectedCol)
+        outState.putInt(STATE_SAVE_SLOT_INDEX, currentSaveSlotIndex)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         stopTimerTicker()
+        stopIdleHelpTimer()
+        stopHintPulse()
     }
 
     companion object {
         const val EXTRA_DIFFICULTY = "DIFFICULTY"
         const val EXTRA_IS_DAILY_CHALLENGE = "IS_DAILY_CHALLENGE"
         const val EXTRA_RESUME_SAVED_GAME = "RESUME_SAVED_GAME"
+        const val EXTRA_SAVE_SLOT_INDEX = "SAVE_SLOT_INDEX"
         const val EXTRA_TIME = "TIME"
         const val EXTRA_HINTS_USED = "HINTS_USED"
         const val EXTRA_MAX_HINTS = "MAX_HINTS"
@@ -479,5 +601,7 @@ class GameActivity : AppCompatActivity() {
 
         private const val STATE_SELECTED_ROW = "selected_row"
         private const val STATE_SELECTED_COL = "selected_col"
+        private const val STATE_SAVE_SLOT_INDEX = "save_slot_index"
+        private const val IDLE_HELP_DELAY_MS = 60_000L
     }
 }

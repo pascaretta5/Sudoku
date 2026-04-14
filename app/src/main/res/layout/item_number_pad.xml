@@ -4,19 +4,21 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="2dp"
-    app:cardBackgroundColor="@color/primary_light"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_margin="3dp"
+    app:cardBackgroundColor="@color/transparent"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="0dp">
 
     <TextView
         android:id="@+id/tvNumber"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@drawable/bg_number_pad_tile"
         android:gravity="center"
+        android:minHeight="52dp"
         android:padding="12dp"
         android:textColor="@color/white"
-        android:textSize="20sp"
+        android:textSize="22sp"
         android:textStyle="bold"
         tools:text="5" />
 

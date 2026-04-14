@@ -1,31 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary Colors -->
-    <color name="primary">#4285F4</color>
-    <color name="primary_dark">#3367D6</color>
-    <color name="primary_light">#8AB4F8</color>
-    <color name="secondary">#EA4335</color>
-    <color name="accent">#FBBC05</color>
-    <color name="background">#FFFFFF</color>
-    <color name="text_primary">#202124</color>
-    <color name="text_secondary">#5F6368</color>
-    
-    <!-- Additional Colors -->
-    <color name="correct">#34A853</color>
-    <color name="error">#EA4335</color>
-    <color name="hint">#FBBC05</color>
-    <color name="selected_cell">#E8F0FE</color>
-    <color name="notes">#5F6368</color>
-    <color name="grid_lines">#DADCE0</color>
-    <color name="grid_lines_bold">#9AA0A6</color>
-    
-    <!-- Difficulty Level Colors -->
-    <color name="easy">#34A853</color>
-    <color name="normal">#4285F4</color>
-    <color name="hard">#FBBC05</color>
-    <color name="insane">#EA4335</color>
-    
-    <!-- Standard Colors -->
+    <color name="primary">#6C63FF</color>
+    <color name="primary_dark">#4A3FD9</color>
+    <color name="primary_light">#A29BFE</color>
+    <color name="secondary">#FF7A59</color>
+    <color name="accent">#FFD166</color>
+    <color name="background">#F6F2FF</color>
+    <color name="text_primary">#211A3A</color>
+    <color name="text_secondary">#6D6688</color>
+
+    <color name="correct">#34C759</color>
+    <color name="error">#FF5D73</color>
+    <color name="hint">#FFC857</color>
+    <color name="selected_cell">#E6DEFF</color>
+    <color name="notes">#7E769A</color>
+    <color name="grid_lines">#D7D0EE</color>
+    <color name="grid_lines_bold">#8C80C7</color>
+
+    <color name="easy">#47C67A</color>
+    <color name="normal">#5C7CFA</color>
+    <color name="hard">#FFB84D</color>
+    <color name="insane">#FF6B6B</color>
+
+    <color name="home_gradient_start">#24174A</color>
+    <color name="home_gradient_mid">#4B2E83</color>
+    <color name="home_gradient_end">#A24DFF</color>
+    <color name="home_overlay">#26FFFFFF</color>
+    <color name="home_card">#33FFFFFF</color>
+    <color name="home_card_stroke">#59FFFFFF</color>
+    <color name="home_text">#FFF8FF</color>
+    <color name="home_text_secondary">#E3D9FF</color>
+
+    <color name="surface">#FFFDFE</color>
+    <color name="surface_alt">#F1EBFF</color>
+    <color name="surface_deep">#E1D8FF</color>
+    <color name="control_button">#FFFFFF</color>
+    <color name="control_button_pressed">#E8DEFF</color>
+    <color name="number_pad_top">#8F86FF</color>
+    <color name="number_pad_bottom">#655DFF</color>
+    <color name="hint_highlight_start">#FFE082</color>
+    <color name="hint_highlight_end">#FF9F68</color>
+    <color name="saved_slot_chip">#EEE8FF</color>
+
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="transparent">#00000000</color>

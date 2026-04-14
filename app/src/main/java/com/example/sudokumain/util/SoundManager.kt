@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.SoundPool
-import com.example.sudokumain.R
 
 /**
  * Manages sound effects and background music for the game.
@@ -30,12 +29,12 @@ object SoundManager {
                 .build()
 
             soundPool = SoundPool.Builder()
-                .setMaxStreams(4)
+                .setMaxStreams(6)
                 .setAudioAttributes(audioAttributes)
                 .build()
 
-            soundMap["click"] = soundPool!!.load(context, R.raw.click_sound, 1)
-            soundMap["complete"] = soundPool!!.load(context, R.raw.complete_sound, 1)
+            loadSound(context, "click", listOf("boop_click", "click_sound"))
+            loadSound(context, "complete", listOf("complete_sound"))
             isInitialized = true
         }
 
@@ -66,7 +65,7 @@ object SoundManager {
     }
 
     fun playButtonClick() {
-        playSound("click", volumeMultiplier = 0.8f)
+        playSound("click", volumeMultiplier = 0.88f, rate = 1.02f)
     }
 
     fun updateSettings(soundEffectsEnabled: Boolean, backgroundMusicEnabled: Boolean, volume: Float) {
@@ -75,7 +74,7 @@ object SoundManager {
         this.masterVolume = volume.coerceIn(0f, 1f)
 
         ensureBackgroundPlayer()
-        backgroundPlayer?.setVolume(masterVolume, masterVolume)
+        backgroundPlayer?.setVolume(masterVolume * 0.55f, masterVolume * 0.55f)
 
         if (this.backgroundMusicEnabled) {
             resumeBackgroundMusic()
@@ -98,15 +97,15 @@ object SoundManager {
     }
 
     fun playError() {
-        playSound("click", volumeMultiplier = 0.7f, rate = 0.8f)
+        playSound("click", volumeMultiplier = 0.72f, rate = 0.78f)
     }
 
     fun playNumberPlaced() {
-        playSound("click", volumeMultiplier = 0.9f, rate = 1.05f)
+        playSound("click", volumeMultiplier = 0.92f, rate = 1.08f)
     }
 
     fun playHint() {
-        playSound("click", volumeMultiplier = 0.85f, rate = 1.15f)
+        playSound("click", volumeMultiplier = 0.95f, rate = 1.18f)
     }
 
     fun playGameComplete() {
@@ -117,12 +116,26 @@ object SoundManager {
         val context = appContext ?: return
         if (backgroundPlayer != null) return
 
-        val musicResId = context.resources.getIdentifier("background_music", "raw", context.packageName)
+        val musicResId = resolveRawResource(context, listOf("silly_background_music", "background_music"))
         if (musicResId == 0) return
 
         backgroundPlayer = MediaPlayer.create(context, musicResId)?.apply {
             isLooping = true
-            setVolume(masterVolume, masterVolume)
+            setVolume(masterVolume * 0.55f, masterVolume * 0.55f)
         }
+    }
+
+    private fun loadSound(context: Context, key: String, resourceNames: List<String>) {
+        val resId = resolveRawResource(context, resourceNames)
+        if (resId != 0) {
+            soundMap[key] = soundPool!!.load(context, resId, 1)
+        }
+    }
+
+    private fun resolveRawResource(context: Context, candidates: List<String>): Int {
+        return candidates.firstNotNullOfOrNull { name ->
+            context.resources.getIdentifier(name, "raw", context.packageName)
+                .takeIf { it != 0 }
+        } ?: 0
     }
 }
