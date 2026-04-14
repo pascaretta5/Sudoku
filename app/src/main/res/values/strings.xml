@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sudoku Game</string>
-    
+
     <!-- Homepage -->
     <string name="play">PLAY</string>
     <string name="daily_challenge">DAILY CHALLENGE</string>
     <string name="achievements">ACHIEVEMENTS</string>
     <string name="leaderboards">LEADERBOARDS</string>
     <string name="settings">SETTINGS</string>
-    
+    <string name="resume_saved_game_title">Resume Saved Game?</string>
+    <string name="resume_saved_game_message">You have an unfinished Sudoku puzzle. Would you like to resume it or start a new one?</string>
+    <string name="start_new_game">START NEW</string>
+
     <!-- Difficulty Selection -->
     <string name="select_difficulty">SELECT DIFFICULTY</string>
     <string name="difficulty_easy">EASY</string>
@@ -19,9 +22,10 @@
     <string name="difficulty_normal_desc">For casual players</string>
     <string name="difficulty_hard_desc">For experienced players</string>
     <string name="difficulty_insane_desc">The ultimate challenge</string>
-    
+
     <!-- Game Screen -->
     <string name="hint">HINT</string>
+    <string name="hint_with_count">HINT (%1$d/%2$d)</string>
     <string name="undo">UNDO</string>
     <string name="redo">REDO</string>
     <string name="notes">NOTES</string>
@@ -29,7 +33,8 @@
     <string name="pause">PAUSE</string>
     <string name="resume">RESUME</string>
     <string name="back">BACK</string>
-    
+    <string name="game_paused">Game paused</string>
+
     <!-- Settings -->
     <string name="sound_effects">Sound Effects</string>
     <string name="background_music">Background Music</string>
@@ -41,7 +46,8 @@
     <string name="reset_progress">RESET PROGRESS</string>
     <string name="on">ON</string>
     <string name="off">OFF</string>
-    
+    <string name="all_progress_reset">All progress has been reset.</string>
+
     <!-- Game Complete -->
     <string name="completed">COMPLETED!</string>
     <string name="time">Time:</string>
@@ -51,7 +57,12 @@
     <string name="play_again">PLAY AGAIN</string>
     <string name="share_result">SHARE RESULT</string>
     <string name="main_menu">MAIN MENU</string>
-    
+    <string name="time_format">Time: %1$02d:%2$02d</string>
+    <string name="hints_used_format">Hints Used: %1$d/%2$d</string>
+    <string name="score_format">Score: %1$s</string>
+    <string name="share_result_text">I just completed a %1$s Sudoku puzzle in %2$s with %3$s! Can you beat that? #SudokuGame</string>
+    <string name="share_result_chooser">Share your result</string>
+
     <!-- Dialogs -->
     <string name="confirm">CONFIRM</string>
     <string name="cancel">CANCEL</string>

@@ -2,9 +2,10 @@ package com.example.sudokumain
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.View
 import android.widget.Button
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.example.sudokumain.util.ActiveGameStorage
 import com.example.sudokumain.util.SoundManager
 
 /**
@@ -19,54 +20,73 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Initialize sound manager
         soundManager = SoundManager
         soundManager.init(this)
 
-
-        // Set up button click listeners
         setupButtons()
     }
 
     private fun setupButtons() {
-        // Play button
         findViewById<Button>(R.id.btnPlay).setOnClickListener {
             soundManager.playButtonClick()
-            val intent = Intent(this, DifficultySelectionActivity::class.java)
-            startActivity(intent)
+            if (ActiveGameStorage.hasSavedGame(this)) {
+                showResumeGameDialog()
+            } else {
+                startDifficultySelection()
+            }
         }
 
-        // Daily Challenge button
         findViewById<Button>(R.id.btnDailyChallenge).setOnClickListener {
             soundManager.playButtonClick()
-            // TODO: Implement daily challenge
-            // For now, just start a random Normal difficulty game
-            val intent = Intent(this, GameActivity::class.java)
-            intent.putExtra("DIFFICULTY", "NORMAL")
-            intent.putExtra("IS_DAILY_CHALLENGE", true)
-            startActivity(intent)
-        }
-        //ToDo
-        // Achievements button
-        findViewById<Button>(R.id.btnAchievements).setOnClickListener {
-            soundManager.playButtonClick()
-           // val intent = Intent(this, AchievementsActivity::class.java)
-          //  startActivity(intent)
-        }
-        //TODO
-        // Leaderboards button
-        findViewById<Button>(R.id.btnLeaderboards).setOnClickListener {
-            soundManager.playButtonClick()
-           // val intent = Intent(this, LeaderboardActivity::class.java)
-            //startActivity(intent)
+            if (ActiveGameStorage.hasSavedGame(this)) {
+                showResumeGameDialog()
+            } else {
+                val intent = Intent(this, GameActivity::class.java)
+                intent.putExtra(GameActivity.EXTRA_DIFFICULTY, "NORMAL")
+                intent.putExtra(GameActivity.EXTRA_IS_DAILY_CHALLENGE, true)
+                startActivity(intent)
+            }
         }
 
-        // Settings button
+        findViewById<Button>(R.id.btnAchievements).setOnClickListener {
+            soundManager.playButtonClick()
+        }
+
+        findViewById<Button>(R.id.btnLeaderboards).setOnClickListener {
+            soundManager.playButtonClick()
+        }
+
         findViewById<Button>(R.id.btnSettings).setOnClickListener {
             soundManager.playButtonClick()
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    private fun showResumeGameDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.resume_saved_game_title)
+            .setMessage(R.string.resume_saved_game_message)
+            .setPositiveButton(R.string.resume) { dialog, _ ->
+                dialog.dismiss()
+                val intent = Intent(this, GameActivity::class.java)
+                intent.putExtra(GameActivity.EXTRA_RESUME_SAVED_GAME, true)
+                startActivity(intent)
+            }
+            .setNegativeButton(R.string.start_new_game) { dialog, _ ->
+                dialog.dismiss()
+                ActiveGameStorage.clear(this)
+                startDifficultySelection()
+            }
+            .setNeutralButton(R.string.cancel) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun startDifficultySelection() {
+        val intent = Intent(this, DifficultySelectionActivity::class.java)
+        startActivity(intent)
     }
 
     override fun onResume() {

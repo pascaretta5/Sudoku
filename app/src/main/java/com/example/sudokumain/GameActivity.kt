@@ -4,7 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.View
+import android.view.HapticFeedbackConstants
 import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
@@ -13,9 +13,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sudokumain.adapter.NumberPadAdapter
-import com.example.sudokumain.model.Cell
 import com.example.sudokumain.model.Difficulty
 import com.example.sudokumain.model.GameState
+import com.example.sudokumain.util.ActiveGameStorage
+import com.example.sudokumain.util.GamePreferences
 import com.example.sudokumain.util.SoundManager
 import com.example.sudokumain.view.SudokuBoardView
 
@@ -34,76 +35,84 @@ class GameActivity : AppCompatActivity() {
     private lateinit var tvDifficulty: TextView
     private lateinit var btnHint: Button
     private lateinit var btnNotes: Button
-    
+
     private var isNotesMode = false
     private var selectedRow = -1
     private var selectedCol = -1
+    private var isTimerTickerRunning = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_game)
 
-        // Initialize sound manager
         soundManager = SoundManager
         soundManager.init(this)
 
+        val savedSession = if (intent.getBooleanExtra(EXTRA_RESUME_SAVED_GAME, false)) {
+            ActiveGameStorage.loadGame(this)
+        } else {
+            null
+        }
 
-        // Get difficulty from intent
-        val difficultyString = intent.getStringExtra("DIFFICULTY") ?: "NORMAL"
-        val difficulty = Difficulty.valueOf(difficultyString)
-        
-        // Initialize game state
-        gameState = GameState(difficulty)
-        
-        // Initialize UI components
+        val difficulty = savedSession?.saveGame?.difficulty
+            ?: Difficulty.valueOf(intent.getStringExtra(EXTRA_DIFFICULTY) ?: Difficulty.NORMAL.name)
+
+        gameState = if (savedSession != null) {
+            GameState(
+                difficulty = savedSession.saveGame.difficulty,
+                savedGame = savedSession.saveGame
+            )
+        } else {
+            GameState(
+                difficulty = difficulty,
+                isDailyChallenge = intent.getBooleanExtra(EXTRA_IS_DAILY_CHALLENGE, false)
+            )
+        }
+
+        isNotesMode = savedSession?.isNotesMode ?: false
+        selectedRow = savedInstanceState?.getInt(STATE_SELECTED_ROW)
+            ?: savedSession?.selectedRow
+            ?: -1
+        selectedCol = savedInstanceState?.getInt(STATE_SELECTED_COL)
+            ?: savedSession?.selectedCol
+            ?: -1
+
         initializeUI(difficulty)
-        
-        // Set up timer
         setupTimer()
-        
-        // Set up number pad
         setupNumberPad()
-        
-        // Set up control buttons
         setupControlButtons()
+        restoreSelectionIfNeeded()
+        updateNotesButtonAppearance()
+        updateBoardView()
     }
 
     private fun initializeUI(difficulty: Difficulty) {
-        // Set up back button
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
             soundManager.playButtonClick()
             showExitConfirmationDialog()
         }
-        
-        // Set up settings button
+
         findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
             soundManager.playButtonClick()
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
-        
-        // Set up difficulty text
+
         tvDifficulty = findViewById(R.id.tvDifficulty)
         tvDifficulty.text = difficulty.displayName
-        
-        // Set up timer text
+
         tvTimer = findViewById(R.id.tvTimer)
-        
-        // Set up Sudoku board view
+        tvTimer.text = gameState.getFormattedTime()
+
         sudokuBoardView = findViewById(R.id.sudokuBoard)
-        updateBoardView()
-        
-        // Set up cell selection listener
         sudokuBoardView.setOnCellSelectedListener { row, col ->
             selectedRow = row
             selectedCol = col
         }
-        
-        // Set up hint button
+
         btnHint = findViewById(R.id.btnHint)
         updateHintButtonText()
-        
-        // Set up notes button
+
         btnNotes = findViewById(R.id.btnNotes)
     }
 
@@ -115,13 +124,25 @@ class GameActivity : AppCompatActivity() {
                 timerHandler.postDelayed(this, 1000)
             }
         }
+        startTimerTicker()
+    }
+
+    private fun startTimerTicker() {
+        if (isTimerTickerRunning) return
         timerHandler.post(timerRunnable)
+        isTimerTickerRunning = true
+    }
+
+    private fun stopTimerTicker() {
+        if (!::timerHandler.isInitialized) return
+        timerHandler.removeCallbacks(timerRunnable)
+        isTimerTickerRunning = false
     }
 
     private fun setupNumberPad() {
         val numberPad = findViewById<RecyclerView>(R.id.numberPad)
         val numbers = (1..9).toList()
-        
+
         val adapter = NumberPadAdapter(numbers) { number ->
             if (selectedRow >= 0 && selectedCol >= 0) {
                 if (isNotesMode) {
@@ -131,34 +152,30 @@ class GameActivity : AppCompatActivity() {
                 }
             }
         }
-        
+
         numberPad.layoutManager = GridLayoutManager(this, 9)
         numberPad.adapter = adapter
     }
 
     private fun setupControlButtons() {
-        // Hint button
         btnHint.setOnClickListener {
             soundManager.playButtonClick()
             useHint()
         }
-        
-        // Undo button
+
         findViewById<Button>(R.id.btnUndo).setOnClickListener {
             soundManager.playButtonClick()
             if (gameState.board.undo()) {
                 updateBoardView()
             }
         }
-        
-        // Notes button
+
         btnNotes.setOnClickListener {
             soundManager.playButtonClick()
             isNotesMode = !isNotesMode
             updateNotesButtonAppearance()
         }
-        
-        // Erase button
+
         findViewById<Button>(R.id.btnErase).setOnClickListener {
             soundManager.playButtonClick()
             if (selectedRow >= 0 && selectedCol >= 0) {
@@ -167,11 +184,13 @@ class GameActivity : AppCompatActivity() {
                     gameState.board.setValue(selectedRow, selectedCol, 0)
                     cell.clearNotes()
                     updateBoardView()
+                } else {
+                    soundManager.playError()
+                    triggerHapticFeedback(HapticFeedbackConstants.REJECT)
                 }
             }
         }
-        
-        // Pause button
+
         findViewById<Button>(R.id.btnPause).setOnClickListener {
             soundManager.playButtonClick()
             pauseGame()
@@ -180,19 +199,17 @@ class GameActivity : AppCompatActivity() {
 
     private fun placeNumber(row: Int, col: Int, number: Int) {
         val cell = gameState.board.getCell(row, col)
-        
-        // Can't modify given cells
+
         if (cell.isGiven) {
             soundManager.playError()
+            triggerHapticFeedback(HapticFeedbackConstants.REJECT)
             return
         }
-        
-        // Set the value
+
         if (gameState.board.setValue(row, col, number)) {
             soundManager.playNumberPlaced()
             updateBoardView()
-            
-            // Check if game is completed
+
             if (gameState.board.isSolved()) {
                 gameCompleted()
             }
@@ -201,48 +218,43 @@ class GameActivity : AppCompatActivity() {
 
     private fun toggleNote(row: Int, col: Int, number: Int) {
         val cell = gameState.board.getCell(row, col)
-        
-        // Can't modify given cells or cells with values
+
         if (cell.isGiven || cell.value > 0) {
             soundManager.playError()
+            triggerHapticFeedback(HapticFeedbackConstants.REJECT)
             return
         }
-        
-        // Toggle the note
+
         if (cell.hasNote(number)) {
             cell.removeNote(number)
         } else {
             cell.addNote(number)
         }
-        
+
         updateBoardView()
     }
 
     private fun useHint() {
         if (gameState.getHintsUsed() >= gameState.getMaxHints()) {
-            // No hints left
             showNoHintsLeftDialog()
+            triggerHapticFeedback(HapticFeedbackConstants.REJECT)
             return
         }
-        
+
         val hint = gameState.getHint()
         if (hint != null) {
             val (row, col, value) = hint
-            
-            // Select the cell
+
             sudokuBoardView.selectCell(row, col)
             selectedRow = row
             selectedCol = col
-            
-            // Place the number
+
             gameState.board.setValue(row, col, value)
             soundManager.playHint()
-            
-            // Update UI
+
             updateBoardView()
             updateHintButtonText()
-            
-            // Check if game is completed
+
             if (gameState.board.isSolved()) {
                 gameCompleted()
             }
@@ -250,21 +262,76 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun updateBoardView() {
-        // Create a 2D array of cells for the view
+        val settings = GamePreferences.getSettings(this)
+        sudokuBoardView.setHighlightSameNumbersEnabled(settings.highlightSameNumbersEnabled)
+
+        if (settings.autoCheckEnabled) {
+            updateConflictStates()
+        } else {
+            clearConflictStates()
+        }
+
         val boardCells = Array(9) { row ->
             Array(9) { col ->
                 gameState.board.getCell(row, col)
             }
         }
-        
-        // Update the board view
+
         sudokuBoardView.updateBoard(boardCells)
+    }
+
+    private fun updateConflictStates() {
+        clearConflictStates()
+
+        for (row in 0..8) {
+            for (col in 0..8) {
+                val cell = gameState.board.getCell(row, col)
+                val value = cell.value
+                if (value != 0 && hasConflict(row, col, value)) {
+                    cell.isConflict = true
+                }
+            }
+        }
+    }
+
+    private fun clearConflictStates() {
+        for (row in 0..8) {
+            for (col in 0..8) {
+                gameState.board.getCell(row, col).isConflict = false
+            }
+        }
+    }
+
+    private fun hasConflict(targetRow: Int, targetCol: Int, value: Int): Boolean {
+        for (col in 0..8) {
+            if (col != targetCol && gameState.board.getCell(targetRow, col).value == value) {
+                return true
+            }
+        }
+
+        for (row in 0..8) {
+            if (row != targetRow && gameState.board.getCell(row, targetCol).value == value) {
+                return true
+            }
+        }
+
+        val startRow = (targetRow / 3) * 3
+        val startCol = (targetCol / 3) * 3
+        for (row in startRow until startRow + 3) {
+            for (col in startCol until startCol + 3) {
+                if ((row != targetRow || col != targetCol) && gameState.board.getCell(row, col).value == value) {
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 
     private fun updateHintButtonText() {
         val hintsUsed = gameState.getHintsUsed()
         val maxHints = gameState.getMaxHints()
-        btnHint.text = getString(R.string.hint) + " ($hintsUsed/$maxHints)"
+        btnHint.text = getString(R.string.hint_with_count, hintsUsed, maxHints)
     }
 
     private fun updateNotesButtonAppearance() {
@@ -277,14 +344,25 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
+    private fun restoreSelectionIfNeeded() {
+        if (selectedRow in 0..8 && selectedCol in 0..8) {
+            sudokuBoardView.selectCell(selectedRow, selectedCol)
+        }
+    }
+
+    private fun triggerHapticFeedback(feedbackConstant: Int) {
+        if (GamePreferences.getSettings(this).vibrationEnabled) {
+            window.decorView.performHapticFeedback(feedbackConstant)
+        }
+    }
+
     private fun pauseGame() {
         gameState.pauseTimer()
-        timerHandler.removeCallbacks(timerRunnable)
-        
-        // Show pause dialog
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(R.string.pause)
-            .setMessage("Game paused")
+        stopTimerTicker()
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.pause)
+            .setMessage(R.string.game_paused)
             .setCancelable(false)
             .setPositiveButton(R.string.resume) { dialog, _ ->
                 dialog.dismiss()
@@ -294,37 +372,50 @@ class GameActivity : AppCompatActivity() {
                 dialog.dismiss()
                 finish()
             }
-        
-        builder.create().show()
+            .show()
     }
 
     private fun resumeGame() {
         gameState.startTimer()
-        timerHandler.post(timerRunnable)
+        startTimerTicker()
+    }
+
+    private fun persistCurrentGame() {
+        if (gameState.isGameOver()) {
+            ActiveGameStorage.clear(this)
+            return
+        }
+
+        ActiveGameStorage.saveGame(
+            context = this,
+            gameState = gameState,
+            isNotesMode = isNotesMode,
+            selectedRow = selectedRow,
+            selectedCol = selectedCol
+        )
     }
 
     private fun gameCompleted() {
-        // Stop the timer
         gameState.endGame()
-        timerHandler.removeCallbacks(timerRunnable)
-        
-        // Play completion sound
+        stopTimerTicker()
+        ActiveGameStorage.clear(this)
+
         soundManager.playGameComplete()
-        
-        // Navigate to game complete screen
+        triggerHapticFeedback(HapticFeedbackConstants.CONFIRM)
+
         val intent = Intent(this, GameCompleteActivity::class.java)
-        intent.putExtra("DIFFICULTY", gameState.difficulty.name)
-        intent.putExtra("TIME", gameState.getElapsedTime())
-        intent.putExtra("HINTS_USED", gameState.getHintsUsed())
-        intent.putExtra("MAX_HINTS", gameState.getMaxHints())
-        intent.putExtra("SCORE", gameState.calculateScore())
+        intent.putExtra(EXTRA_DIFFICULTY, gameState.difficulty.name)
+        intent.putExtra(EXTRA_TIME, gameState.getElapsedTime())
+        intent.putExtra(EXTRA_HINTS_USED, gameState.getHintsUsed())
+        intent.putExtra(EXTRA_MAX_HINTS, gameState.getMaxHints())
+        intent.putExtra(EXTRA_SCORE, gameState.calculateScore())
         startActivity(intent)
         finish()
     }
 
     private fun showExitConfirmationDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(R.string.exit_game_title)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.exit_game_title)
             .setMessage(R.string.exit_game_message)
             .setPositiveButton(R.string.confirm) { _, _ ->
                 finish()
@@ -332,25 +423,24 @@ class GameActivity : AppCompatActivity() {
             .setNegativeButton(R.string.cancel) { dialog, _ ->
                 dialog.dismiss()
             }
-        
-        builder.create().show()
+            .show()
     }
 
     private fun showNoHintsLeftDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(R.string.hint)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.hint)
             .setMessage(R.string.no_hints_left)
             .setPositiveButton(R.string.confirm) { dialog, _ ->
                 dialog.dismiss()
             }
-        
-        builder.create().show()
+            .show()
     }
 
     override fun onResume() {
         super.onResume()
+        updateBoardView()
         if (!gameState.isPaused()) {
-            resumeGame()
+            startTimerTicker()
         }
         soundManager.resumeBackgroundMusic()
     }
@@ -358,12 +448,36 @@ class GameActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         gameState.pauseTimer()
-        timerHandler.removeCallbacks(timerRunnable)
+        stopTimerTicker()
         soundManager.pauseBackgroundMusic()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        persistCurrentGame()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(STATE_SELECTED_ROW, selectedRow)
+        outState.putInt(STATE_SELECTED_COL, selectedCol)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        timerHandler.removeCallbacks(timerRunnable)
+        stopTimerTicker()
+    }
+
+    companion object {
+        const val EXTRA_DIFFICULTY = "DIFFICULTY"
+        const val EXTRA_IS_DAILY_CHALLENGE = "IS_DAILY_CHALLENGE"
+        const val EXTRA_RESUME_SAVED_GAME = "RESUME_SAVED_GAME"
+        const val EXTRA_TIME = "TIME"
+        const val EXTRA_HINTS_USED = "HINTS_USED"
+        const val EXTRA_MAX_HINTS = "MAX_HINTS"
+        const val EXTRA_SCORE = "SCORE"
+
+        private const val STATE_SELECTED_ROW = "selected_row"
+        private const val STATE_SELECTED_COL = "selected_col"
     }
 }
