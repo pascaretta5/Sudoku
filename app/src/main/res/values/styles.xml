@@ -48,19 +48,21 @@
     <style name="Button.Control" parent="Widget.MaterialComponents.Button">
         <item name="android:textColor">@color/primary_dark</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textSize">13sp</item>
-        <item name="android:paddingStart">10dp</item>
-        <item name="android:paddingEnd">10dp</item>
-        <item name="android:paddingTop">10dp</item>
-        <item name="android:paddingBottom">10dp</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:paddingStart">4dp</item>
+        <item name="android:paddingEnd">4dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
         <item name="backgroundTint">@color/transparent</item>
         <item name="android:background">@drawable/bg_button_control</item>
-        <item name="cornerRadius">18dp</item>
-        <item name="elevation">0dp</item>
-        <item name="android:insetLeft">0dp</item>
-        <item name="android:insetRight">0dp</item>
-        <item name="android:insetTop">0dp</item>
-        <item name="android:insetBottom">0dp</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="elevation">2dp</item>
+        <item name="android:insetLeft">2dp</item>
+        <item name="android:insetRight">2dp</item>
+        <item name="android:insetTop">4dp</item>
+        <item name="android:insetBottom">4dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:letterSpacing">0.05</item>
     </style>
 
     <style name="Text.Heading" parent="TextAppearance.MaterialComponents.Headline4">

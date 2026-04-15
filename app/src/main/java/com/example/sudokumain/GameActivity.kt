@@ -37,7 +37,9 @@ class GameActivity : AppCompatActivity() {
     private lateinit var idleHelpRunnable: Runnable
     private lateinit var tvTimer: TextView
     private lateinit var tvDifficulty: TextView
-    private lateinit var btnHint: Button
+    private lateinit var tvHintLabel: TextView
+    private lateinit var btnHint: ImageButton
+    private lateinit var btnUndo: ImageButton
     private lateinit var btnNotes: Button
 
     private var isNotesMode = false
@@ -131,6 +133,8 @@ class GameActivity : AppCompatActivity() {
         }
 
         btnHint = findViewById(R.id.btnHint)
+        btnUndo = findViewById(R.id.btnUndo)
+        tvHintLabel = findViewById(R.id.tvHintLabel)
         updateHintButtonText()
 
         btnNotes = findViewById(R.id.btnNotes)
@@ -206,7 +210,7 @@ class GameActivity : AppCompatActivity() {
             useHint()
         }
 
-        findViewById<Button>(R.id.btnUndo).setOnClickListener {
+        btnUndo.setOnClickListener {
             soundManager.playButtonClick()
             if (gameState.board.undo()) {
                 clearHintSuggestion()
@@ -410,17 +414,15 @@ class GameActivity : AppCompatActivity() {
     private fun updateHintButtonText() {
         val hintsUsed = gameState.getHintsUsed()
         val maxHints = gameState.getMaxHints()
-        btnHint.text = getString(R.string.hint_with_count, hintsUsed, maxHints)
+        tvHintLabel.text = getString(R.string.hint_with_count, hintsUsed, maxHints)
     }
 
     private fun updateHintButtonAppearance() {
         if (isHintSuggested) {
             btnHint.setBackgroundResource(R.drawable.bg_button_hint_highlight)
-            btnHint.setTextColor(getColor(R.color.primary_dark))
             startHintPulse()
         } else {
             btnHint.setBackgroundResource(R.drawable.bg_button_control)
-            btnHint.setTextColor(getColor(R.color.white))
             stopHintPulse()
         }
     }
@@ -429,8 +431,8 @@ class GameActivity : AppCompatActivity() {
         if (hintPulseAnimator?.isRunning == true) return
         hintPulseAnimator = ObjectAnimator.ofPropertyValuesHolder(
             btnHint,
-            PropertyValuesHolder.ofFloat(Button.SCALE_X, 1f, 1.06f, 1f),
-            PropertyValuesHolder.ofFloat(Button.SCALE_Y, 1f, 1.06f, 1f)
+            PropertyValuesHolder.ofFloat(ImageButton.SCALE_X, 1f, 1.06f, 1f),
+            PropertyValuesHolder.ofFloat(ImageButton.SCALE_Y, 1f, 1.06f, 1f)
         ).apply {
             duration = 900L
             repeatCount = ObjectAnimator.INFINITE

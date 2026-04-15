@@ -41,6 +41,8 @@
     <color name="hint_highlight_start">#FFE082</color>
     <color name="hint_highlight_end">#FF9F68</color>
     <color name="saved_slot_chip">#EEE8FF</color>
+    <color name="saved_game_card">#FFFFFF</color>
+    <color name="saved_game_stroke">#D7D0EE</color>
 
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>

@@ -200,8 +200,8 @@ class SudokuBoardView @JvmOverloads constructor(
 
                 if (value != 0) {
                     val paint = when {
-                        cell.isConflict -> errorNumberPaint
                         cell.isGiven -> givenNumberPaint
+                        cell.isConflict -> errorNumberPaint
                         else -> userNumberPaint
                     }
 

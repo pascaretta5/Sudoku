@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var soundManager: SoundManager
     private lateinit var savedGamesContainer: LinearLayout
-    private lateinit var tvEmptySavedGames: TextView
+    private lateinit var tvNoSavedGames: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
         soundManager.init(this)
 
         savedGamesContainer = findViewById(R.id.savedGamesContainer)
-        tvEmptySavedGames = findViewById(R.id.tvEmptySavedGames)
+        tvNoSavedGames = findViewById(R.id.tvNoSavedGames)
 
         setupButtons()
     }
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
     private fun renderSavedGames() {
         val savedGames = ActiveGameStorage.getSavedGameSummaries(this)
         savedGamesContainer.removeAllViews()
-        tvEmptySavedGames.visibility = if (savedGames.isEmpty()) View.VISIBLE else View.GONE
+        tvNoSavedGames.visibility = if (savedGames.isEmpty()) View.VISIBLE else View.GONE
 
         val inflater = LayoutInflater.from(this)
         savedGames.forEach { savedGame ->
